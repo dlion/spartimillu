@@ -2,12 +2,20 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"spartimillu/client"
 )
 
-type Spartimillu struct{}
+type SpartimilluServer struct {
+	client client.Client
+}
 
-func (s *Spartimillu) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func NewSpartimilluServer(client client.Client) *SpartimilluServer {
+	return &SpartimilluServer{client: client}
+}
+
+func (s *SpartimilluServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Received request from %s\n", r.RemoteAddr)
 	fmt.Printf("%s / %s\n", r.Method, r.Proto)
 	fmt.Printf("%s / %s\n", r.Method, r.Proto)
@@ -15,5 +23,16 @@ func (s *Spartimillu) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("User-Agent: %s\n", r.Header.Get("User-Agent"))
 	fmt.Printf("Accept: %+v\n", r.Header.Get("Accept"))
 
-	fmt.Fprint(w, "ok")
+	resp := s.client.ForwardRequest(*r)
+
+	fmt.Printf("Response from server: %s %s\n\n", resp.Proto, resp.Status)
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Error reading the response body", http.StatusInternalServerError)
+	}
+
+	stringBody := string(body)
+	fmt.Fprint(w, stringBody)
+	fmt.Println(stringBody)
 }

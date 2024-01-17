@@ -18,7 +18,7 @@ func NewSpartimilluClient(conf SpartimilluClientConf) *SpartimilluClient {
 	return &SpartimilluClient{conf: conf}
 }
 
-func (s SpartimilluClient) ForwardRequest(req http.Request) *http.Response {
+func (s *SpartimilluClient) ForwardRequest(req http.Request) *http.Response {
 	switch req.Method {
 	case http.MethodGet:
 		return sendGetRequestToAnotherServer(s.conf.scheme, s.conf.ip, req)
@@ -29,7 +29,8 @@ func (s SpartimilluClient) ForwardRequest(req http.Request) *http.Response {
 }
 
 func sendGetRequestToAnotherServer(scheme, ip string, req http.Request) *http.Response {
-	body, err := http.Get(scheme + ip + req.RequestURI)
+	url := scheme + ip + req.RequestURI
+	body, err := http.Get(url)
 	if err != nil {
 		log.Fatal("Can't read the response body from the GET request")
 	}
@@ -41,7 +42,8 @@ func sendPostRequestToAnotherServer(scheme, ip string, req http.Request) *http.R
 	if err != nil {
 		log.Fatal("Can't read the request's body")
 	}
-	resp, err := http.Post(scheme+ip+req.RequestURI, http.DetectContentType(bodyBytes), req.Body)
+	url := scheme + ip + req.RequestURI
+	resp, err := http.Post(url, http.DetectContentType(bodyBytes), req.Body)
 	if err != nil {
 		log.Fatal("Can't read the response body from the POST request")
 	}

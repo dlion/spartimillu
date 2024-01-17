@@ -1,24 +1,43 @@
 package server
 
 import (
+	"bytes"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
 func TestServer(t *testing.T) {
-	spartimillu := &Spartimillu{}
-
-	t.Run("log the request and returns ok", func(t *testing.T) {
+	t.Run("should call the client to forward the request", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "/", nil)
 		resp := httptest.NewRecorder()
+		mockClient := newMockClient()
+		spartimillu := NewSpartimilluServer(mockClient)
+		mockClient.On("ForwardRequest", mock.Anything).Return(&http.Response{
+			Status:     "200 OK",
+			StatusCode: 200,
+			Proto:      "HTTP/1.0",
+			Body:       io.NopCloser(bytes.NewBufferString("dummy body")),
+			Request:    req,
+		})
 
 		spartimillu.ServeHTTP(resp, req)
 
-		got := resp.Body.String()
-		want := "ok"
-		assert.Equal(t, want, got, "got %q, want %q", got, want)
-
+		mockClient.AssertExpectations(t)
+		assert.Equal(t, "dummy body", resp.Body.String(), "got %q, want %q", resp.Body.String(), "dummy body")
 	})
+}
+
+type MockClient struct {
+	mock.Mock
+}
+
+func newMockClient() *MockClient { return &MockClient{} }
+
+func (m *MockClient) ForwardRequest(req http.Request) *http.Response {
+	args := m.Called(req)
+	return args.Get(0).(*http.Response)
 }

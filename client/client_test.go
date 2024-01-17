@@ -8,16 +8,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"testing"
 )
 
 func TestClient(t *testing.T) {
-	server, scheme, ip, port := startTestServer("ok")
+	server, scheme, ip := startTestServer("ok")
 	defer server.Close()
 
 	t.Run("should forward a POST request to a specific server", func(t *testing.T) {
-		conf := NewSpartimilluClientConf(scheme, ip, port)
+		conf := NewSpartimilluClientConf(scheme, ip)
 		client := NewSpartimilluClient(conf)
 		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte("hello world for the test server")))
 
@@ -30,7 +29,7 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("should forward a GET request to a specific server", func(t *testing.T) {
-		conf := NewSpartimilluClientConf(scheme, ip, port)
+		conf := NewSpartimilluClientConf(scheme, ip)
 		client := NewSpartimilluClient(conf)
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 
@@ -44,14 +43,13 @@ func TestClient(t *testing.T) {
 	})
 }
 
-func startTestServer(bodyResponse string) (*httptest.Server, string, string, int) {
+func startTestServer(bodyResponse string) (*httptest.Server, string, string) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprint(writer, bodyResponse)
 	}))
 	serverInfo, _ := url.ParseRequestURI(server.URL)
-	port, _ := strconv.Atoi(serverInfo.Port())
 	scheme := serverInfo.Scheme + "://"
-	return server, scheme, serverInfo.Host, port
+	return server, scheme, serverInfo.Host
 }
 
 func getBodyFromResp(t *testing.T, resp *http.Response) string {
