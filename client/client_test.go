@@ -14,20 +14,20 @@ import (
 
 func TestClient(t *testing.T) {
 
-	t.Run("should forward a request to a specific server", func(t *testing.T) {
+	t.Run("should forward a POST request to a specific server", func(t *testing.T) {
 		server, scheme, ip, port := startTestServer("ok")
 		defer server.Close()
 
 		conf := NewSpartimilluClientConf(scheme, ip, port)
 		client := NewSpartimilluClient(conf)
-		req := httptest.NewRequest(http.MethodGet, "/", bytes.NewReader([]byte("hello world for the test server")))
+		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte("hello world for the test server")))
 
 		resp := client.ForwardRequest(*req)
 
 		body := getBodyFromResp(t, resp)
+		assert.Equal(t, http.MethodPost, resp.Request.Method, "got %v, wanted %v", resp.Request.Method, http.MethodPost)
 		assert.Equal(t, http.StatusOK, resp.StatusCode, "got %v, wanted %v", resp.StatusCode, http.StatusOK)
 		assert.Equal(t, "ok", body, "got %v, wanted %v", body, resp)
-
 	})
 }
 
