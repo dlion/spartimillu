@@ -11,7 +11,8 @@ type Client interface {
 }
 
 type SpartimilluClient struct {
-	conf SpartimilluClientConf
+	conf    SpartimilluClientConf
+	counter int
 }
 
 func NewSpartimilluClient(conf SpartimilluClientConf) *SpartimilluClient {
@@ -19,13 +20,20 @@ func NewSpartimilluClient(conf SpartimilluClientConf) *SpartimilluClient {
 }
 
 func (s *SpartimilluClient) ForwardRequest(req http.Request) *http.Response {
+	var resp *http.Response
+
+	serverIndex := s.counter % len(s.conf.addresses)
+
 	switch req.Method {
 	case http.MethodGet:
-		return sendGetRequestToAnotherServer(s.conf.address + req.RequestURI)
+		resp = sendGetRequestToAnotherServer(s.conf.addresses[serverIndex] + req.RequestURI)
 	case http.MethodPost:
-		return sendPostRequestToAnotherServer(s.conf.address+req.RequestURI, req)
+		resp = sendPostRequestToAnotherServer(s.conf.addresses[serverIndex]+req.RequestURI, req)
 	}
-	return nil
+
+	s.counter++
+
+	return resp
 }
 
 func sendGetRequestToAnotherServer(url string) *http.Response {
