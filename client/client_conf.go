@@ -1,10 +1,9 @@
 package client
 
 type SpartimilluClientConf struct {
-	scheme string
-	ip     string
+	address string
 }
 
-func NewSpartimilluClientConf(scheme, ip string) SpartimilluClientConf {
-	return SpartimilluClientConf{scheme: scheme, ip: ip}
+func NewSpartimilluClientConf(address string) SpartimilluClientConf {
+	return SpartimilluClientConf{address: address}
 }

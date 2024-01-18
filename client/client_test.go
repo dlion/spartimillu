@@ -7,16 +7,15 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 )
 
 func TestClient(t *testing.T) {
-	server, scheme, ip := startTestServer("ok")
+	server, address := startTestServer("ok")
 	defer server.Close()
 
 	t.Run("should forward a POST request to a specific server", func(t *testing.T) {
-		conf := NewSpartimilluClientConf(scheme, ip)
+		conf := NewSpartimilluClientConf(address)
 		client := NewSpartimilluClient(conf)
 		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte("hello world for the test server")))
 
@@ -29,7 +28,7 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("should forward a GET request to a specific server", func(t *testing.T) {
-		conf := NewSpartimilluClientConf(scheme, ip)
+		conf := NewSpartimilluClientConf(address)
 		client := NewSpartimilluClient(conf)
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 
@@ -43,13 +42,11 @@ func TestClient(t *testing.T) {
 	})
 }
 
-func startTestServer(bodyResponse string) (*httptest.Server, string, string) {
+func startTestServer(bodyResponse string) (*httptest.Server, string) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprint(writer, bodyResponse)
 	}))
-	serverInfo, _ := url.ParseRequestURI(server.URL)
-	scheme := serverInfo.Scheme + "://"
-	return server, scheme, serverInfo.Host
+	return server, server.URL
 }
 
 func getBodyFromResp(t *testing.T, resp *http.Response) string {
