@@ -8,6 +8,7 @@ import (
 
 type Client interface {
 	ForwardRequest(req http.Request) *http.Response
+	HealthCheck() *http.Response
 }
 
 type SpartimilluClient struct {
@@ -34,6 +35,11 @@ func (s *SpartimilluClient) ForwardRequest(req http.Request) *http.Response {
 	s.counter++
 
 	return resp
+}
+
+func (s *SpartimilluClient) HealthCheck() *http.Response {
+	//TODO implement me
+	panic("implement me")
 }
 
 func sendGetRequestToAnotherServer(url string) *http.Response {

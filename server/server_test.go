@@ -29,6 +29,24 @@ func TestServer(t *testing.T) {
 		mockClient.AssertExpectations(t)
 		assert.Equal(t, "dummy body", resp.Body.String(), "got %q, want %q", resp.Body.String(), "dummy body")
 	})
+
+	t.Run("should call the client to do an health check", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/healthcheck", nil)
+		resp := httptest.NewRecorder()
+		mockClient := newMockClient()
+		spartimillu := NewSpartimilluServer(mockClient)
+		mockClient.On("HealthCheck").Return(&http.Response{
+			Status:     "200 OK",
+			StatusCode: 200,
+			Proto:      "HTTP/1.0",
+			Request:    req,
+		})
+
+		spartimillu.HealthCheck()
+
+		mockClient.AssertExpectations(t)
+		assert.Equal(t, http.StatusOK, resp.Code, "got %q, want %q", resp.Code, http.StatusOK)
+	})
 }
 
 type MockClient struct {
@@ -40,4 +58,15 @@ func newMockClient() *MockClient { return &MockClient{} }
 func (m *MockClient) ForwardRequest(req http.Request) *http.Response {
 	args := m.Called(req)
 	return args.Get(0).(*http.Response)
+}
+
+func (m *MockClient) HealthCheck() *http.Response {
+	m.Called()
+	req, _ := http.NewRequest(http.MethodGet, "http://dummy-address:1234/healthcheck", nil)
+	return &http.Response{
+		Status:     "200 OK",
+		StatusCode: 200,
+		Proto:      "HTTP/1.0",
+		Request:    req,
+	}
 }
