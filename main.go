@@ -15,15 +15,14 @@ func main() {
 	}, "/healthcheck"))
 	spartimilluServer := server.NewSpartimilluServer(spartimilluClient)
 
-	ticker := time.NewTicker(5 * time.Second)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				spartimilluServer.HealthCheck()
-			}
-		}
-	}()
+	go doEvery(1*time.Second, spartimilluServer.HealthCheck)
 
 	log.Fatal(http.ListenAndServe(":80", spartimilluServer))
+}
+
+func doEvery(d time.Duration, f func()) {
+	ticker := time.Tick(d)
+	for range ticker {
+		go f()
+	}
 }

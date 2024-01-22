@@ -4,6 +4,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
+	"time"
 )
 
 type Client interface {
@@ -15,6 +17,7 @@ type SpartimilluClient struct {
 	conf           SpartimilluClientConf
 	counter        int
 	healthyServers map[string]bool
+	mu             sync.Mutex
 }
 
 func NewSpartimilluClient(conf SpartimilluClientConf) *SpartimilluClient {
@@ -22,34 +25,41 @@ func NewSpartimilluClient(conf SpartimilluClientConf) *SpartimilluClient {
 }
 
 func (s *SpartimilluClient) ForwardRequest(req http.Request) *http.Response {
-	if len(s.healthyServers) == 0 {
-		s.HealthCheck()
-	}
-
-	index := s.counter % len(s.conf.addresses)
-	address := s.conf.addresses[index]
-	s.counter++
-
-	if s.healthyServers[address] == true {
-		switch req.Method {
-		case http.MethodGet:
-			return sendGetRequestToAnotherServer(address + req.RequestURI)
-		case http.MethodPost:
-			return sendPostRequestToAnotherServer(address+req.RequestURI, req)
+	for {
+		if len(s.healthyServers) == 0 {
+			s.HealthCheck()
 		}
-	}
 
-	return s.ForwardRequest(req)
+		s.mu.Lock()
+		index := s.counter % len(s.conf.addresses)
+		address := s.conf.addresses[index]
+		s.counter++
+
+		if s.healthyServers[address] == true {
+			s.mu.Unlock()
+			switch req.Method {
+			case http.MethodGet:
+				return sendGetRequestToAnotherServer(address + req.RequestURI)
+			case http.MethodPost:
+				return sendPostRequestToAnotherServer(address+req.RequestURI, req)
+			}
+		}
+		s.mu.Unlock()
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func (s *SpartimilluClient) HealthCheck() {
 	for _, address := range s.conf.addresses {
 		resp, err := http.Get(address)
+
+		s.mu.Lock()
 		if err == nil && resp.StatusCode == http.StatusOK {
 			s.healthyServers[address] = true
 		} else {
 			s.healthyServers[address] = false
 		}
+		s.mu.Unlock()
 	}
 }
 
