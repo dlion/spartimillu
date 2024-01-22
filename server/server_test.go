@@ -60,13 +60,6 @@ func (m *MockClient) ForwardRequest(req http.Request) *http.Response {
 	return args.Get(0).(*http.Response)
 }
 
-func (m *MockClient) HealthCheck() *http.Response {
+func (m *MockClient) HealthCheck() {
 	m.Called()
-	req, _ := http.NewRequest(http.MethodGet, "http://dummy-address:1234/healthcheck", nil)
-	return &http.Response{
-		Status:     "200 OK",
-		StatusCode: 200,
-		Proto:      "HTTP/1.0",
-		Request:    req,
-	}
 }

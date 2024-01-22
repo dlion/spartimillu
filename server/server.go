@@ -37,12 +37,8 @@ func (s *SpartimilluServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(stringBody)
 }
 
-func (s *SpartimilluServer) HealthCheck() *http.Response {
+func (s *SpartimilluServer) HealthCheck() {
 	fmt.Printf("Performing Health Check\n")
 
-	resp := s.client.HealthCheck()
-
-	fmt.Printf("Response from server %s: %s %s\n\n", resp.Request.Host, resp.Proto, resp.Status)
-
-	return resp
+	s.client.HealthCheck()
 }

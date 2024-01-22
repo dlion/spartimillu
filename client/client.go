@@ -8,46 +8,57 @@ import (
 
 type Client interface {
 	ForwardRequest(req http.Request) *http.Response
-	HealthCheck() *http.Response
+	HealthCheck()
 }
 
 type SpartimilluClient struct {
-	conf    SpartimilluClientConf
-	counter int
+	conf           SpartimilluClientConf
+	counter        int
+	healthyServers map[string]bool
 }
 
 func NewSpartimilluClient(conf SpartimilluClientConf) *SpartimilluClient {
-	return &SpartimilluClient{conf: conf}
+	return &SpartimilluClient{conf: conf, healthyServers: make(map[string]bool)}
 }
 
 func (s *SpartimilluClient) ForwardRequest(req http.Request) *http.Response {
-	var resp *http.Response
-
-	serverIndex := s.counter % len(s.conf.addresses)
-
-	switch req.Method {
-	case http.MethodGet:
-		resp = sendGetRequestToAnotherServer(s.conf.addresses[serverIndex] + req.RequestURI)
-	case http.MethodPost:
-		resp = sendPostRequestToAnotherServer(s.conf.addresses[serverIndex]+req.RequestURI, req)
+	if len(s.healthyServers) == 0 {
+		s.HealthCheck()
 	}
 
+	index := s.counter % len(s.conf.addresses)
+	address := s.conf.addresses[index]
 	s.counter++
 
-	return resp
+	if s.healthyServers[address] == true {
+		switch req.Method {
+		case http.MethodGet:
+			return sendGetRequestToAnotherServer(address + req.RequestURI)
+		case http.MethodPost:
+			return sendPostRequestToAnotherServer(address+req.RequestURI, req)
+		}
+	}
+
+	return s.ForwardRequest(req)
 }
 
-func (s *SpartimilluClient) HealthCheck() *http.Response {
-	//TODO implement me
-	panic("implement me")
+func (s *SpartimilluClient) HealthCheck() {
+	for _, address := range s.conf.addresses {
+		resp, err := http.Get(address)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			s.healthyServers[address] = true
+		} else {
+			s.healthyServers[address] = false
+		}
+	}
 }
 
 func sendGetRequestToAnotherServer(url string) *http.Response {
-	body, err := http.Get(url)
+	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatal("Can't read the response body from the GET request")
+		log.Fatal("Can't read the response resp from the GET request")
 	}
-	return body
+	return resp
 }
 
 func sendPostRequestToAnotherServer(url string, req http.Request) *http.Response {
