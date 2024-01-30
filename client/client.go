@@ -1,7 +1,6 @@
 package client
 
 import (
-	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -40,8 +39,6 @@ func (s *SpartimilluClient) ForwardRequest(req http.Request) *http.Response {
 			switch req.Method {
 			case http.MethodGet:
 				return sendGetRequestToAnotherServer(address + req.RequestURI)
-			case http.MethodPost:
-				return sendPostRequestToAnotherServer(address+req.RequestURI, req)
 			}
 		}
 		s.mu.Unlock()
@@ -68,18 +65,5 @@ func sendGetRequestToAnotherServer(url string) *http.Response {
 	if err != nil {
 		log.Fatal("Can't read the response resp from the GET request")
 	}
-	return resp
-}
-
-func sendPostRequestToAnotherServer(url string, req http.Request) *http.Response {
-	bodyBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		log.Fatal("Can't read the request's body")
-	}
-	resp, err := http.Post(url, http.DetectContentType(bodyBytes), req.Body)
-	if err != nil {
-		log.Fatal("Can't read the response body from the POST request")
-	}
-
 	return resp
 }

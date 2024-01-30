@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -11,24 +10,8 @@ import (
 )
 
 func TestClient(t *testing.T) {
-
-	t.Run("should forward a POST request to a specific server", func(t *testing.T) {
-		server, address := startTestServer("ok")
-		defer server.Close()
-		conf := NewSpartimilluClientConf([]string{address}, "/healthcheck")
-		client := NewSpartimilluClient(conf)
-		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte("hello world for the test server")))
-
-		resp := client.ForwardRequest(*req)
-
-		body := getBodyFromResp(t, resp)
-		assert.Equal(t, http.MethodPost, resp.Request.Method, "got %v, wanted %v", resp.Request.Method, http.MethodPost)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "got %v, wanted %v", resp.StatusCode, http.StatusOK)
-		assert.Equal(t, "ok", body, "got %v, wanted %v", body, "ok")
-	})
-
 	t.Run("should forward a GET request to a specific server", func(t *testing.T) {
-		server, address := startTestServer("ok")
+		server, address := startTestServer(t, "ok")
 		defer server.Close()
 		conf := NewSpartimilluClientConf([]string{address}, "/healthcheck")
 		client := NewSpartimilluClient(conf)
@@ -43,11 +26,11 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("should forward a GET request to any server using a round robin algorithm", func(t *testing.T) {
-		server1, address1 := startTestServer("server1")
+		server1, address1 := startTestServer(t, "server1")
 		defer server1.Close()
-		server2, address2 := startTestServer("server2")
+		server2, address2 := startTestServer(t, "server2")
 		defer server2.Close()
-		server3, address3 := startTestServer("server3")
+		server3, address3 := startTestServer(t, "server3")
 		defer server3.Close()
 		conf := NewSpartimilluClientConf([]string{address1, address2, address3}, "/healthcheck")
 		client := NewSpartimilluClient(conf)
@@ -76,11 +59,11 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("should perform a healthcheck towards a server", func(t *testing.T) {
-		server1, address1 := startTestServer("server1")
+		server1, address1 := startTestServer(t, "server1")
 		defer server1.Close()
-		server2, address2 := startTestServer("server2")
+		server2, address2 := startTestServer(t, "server2")
 		defer server2.Close()
-		server3, address3 := startTestServer("server3")
+		server3, address3 := startTestServer(t, "server3")
 		defer server3.Close()
 
 		conf := NewSpartimilluClientConf([]string{address1, address2, address3}, "/healthcheck")
@@ -124,7 +107,9 @@ func TestClient(t *testing.T) {
 	})
 }
 
-func startTestServer(bodyResponse string) (*httptest.Server, string) {
+func startTestServer(t *testing.T, bodyResponse string) (*httptest.Server, string) {
+	t.Helper()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Printf("%s has been called\n", bodyResponse)
 		fmt.Fprint(writer, bodyResponse)
