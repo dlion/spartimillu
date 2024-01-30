@@ -9,13 +9,15 @@ import (
 )
 
 func main() {
+	const seconds = 1 * time.Second
+
 	spartimilluClient := client.NewSpartimilluClient(client.NewSpartimilluClientConf([]string{
 		"http://localhost:8080",
 		"http://localhost:8081",
 	}, "/healthcheck"))
 	spartimilluServer := server.NewSpartimilluServer(spartimilluClient)
 
-	go doEvery(1*time.Second, spartimilluServer.HealthCheck)
+	go doEvery(seconds, spartimilluServer.HealthCheck)
 
 	log.Fatal(http.ListenAndServe(":80", spartimilluServer))
 }
