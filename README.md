@@ -16,6 +16,9 @@ To run it:
 4. `go build`
 5. `./spartimillu`
 
+### Test the load balancer
+`curl http://localhost/ --output -`
+
 ## bg - Dummy background services    
 This directory contains the folders which will represent 2 services, to start them `cd bg` and into two separates terminal instances:
 1. server8080: `python -m http.server 8080 --directory server8080`
