@@ -1,4 +1,4 @@
-module spartimillu
+module github.com/dlion/spartimillu
 
 go 1.21
 
